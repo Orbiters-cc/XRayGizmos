@@ -1,0 +1,19 @@
+{
+  "name": "orbiters.xraygizmos.Editor",
+  "rootNamespace": "Orbiters.XRayGizmos.Editor",
+  "references": [
+    "orbiters.xraygizmos"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": true,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
+

@@ -1,0 +1,19 @@
+{
+  "name": "orbiters.xraygizmos",
+  "displayName": "XRay Gizmos",
+  "version": "0.1.0",
+  "license": "LicenseRef-XRayGizmos-Proprietary",
+  "unity": "2022.3",
+  "description": "Unity editor xray armature gizmos for selected objects or loaded scenes.",
+  "type": "tool",
+  "dependencies": {},
+  "gitDependencies": {},
+  "vpmDependencies": {},
+  "author": {
+    "name": "blackorbit",
+    "email": "blackorbit.eclaire@gmail.com",
+    "url": "orbiters.cc"
+  },
+  "legacyFolders": {},
+  "legacyFiles": {}
+}
