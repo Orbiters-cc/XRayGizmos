@@ -136,6 +136,11 @@
     margin-top: 4px;
 }
 
+.xray-summary-key {
+    color: #999999;
+    width: 90px;
+}
+
 .xray-summary-value {
     color: #e6e6e6;
     flex-shrink: 1;
@@ -150,4 +155,3 @@
     position: absolute;
     background-color: #D9D9D9;
 }
-

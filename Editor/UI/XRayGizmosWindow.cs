@@ -24,12 +24,14 @@ namespace Orbiters.XRayGizmos.Editor
         private void OnEnable()
         {
             XRayGizmoService.Changed += Render;
+            XRayWeightPaintService.Changed += Render;
             Selection.selectionChanged += Render;
         }
 
         private void OnDisable()
         {
             XRayGizmoService.Changed -= Render;
+            XRayWeightPaintService.Changed -= Render;
             Selection.selectionChanged -= Render;
         }
 
@@ -131,12 +133,45 @@ namespace Orbiters.XRayGizmos.Editor
             color.RegisterValueChangedCallback(evt => XRayGizmoService.SetColor(evt.newValue));
             content.Add(color);
 
+            Section("Weight paint");
+
+            var weightPaint = new Toggle("Show weight paint") { value = XRayWeightPaintService.Enabled };
+            weightPaint.AddToClassList("xray-field");
+            weightPaint.RegisterValueChangedCallback(evt => XRayWeightPaintService.SetEnabled(evt.newValue));
+            content.Add(weightPaint);
+
+            var weightAlpha = new Slider("Weight alpha", 0.1f, 1f)
+            {
+                value = XRayWeightPaintService.OverlayAlpha,
+                showInputField = true
+            };
+            weightAlpha.AddToClassList("xray-field");
+            weightAlpha.RegisterValueChangedCallback(evt => XRayWeightPaintService.SetOverlayAlpha(evt.newValue));
+            content.Add(weightAlpha);
+
+            if (XRayWeightPaintService.Enabled)
+            {
+                SummaryRow("Meshes", FormatRenderers(XRayWeightPaintService.ActiveRenderers));
+                SummaryRow("Bones", FormatTransforms(XRayWeightPaintService.ActiveBones));
+                Help(XRayWeightPaintService.LastStatus ?? "No weight paint overlay is currently visible.");
+            }
+
             var controls = new VisualElement();
             controls.AddToClassList("xray-row");
-            var refresh = new Button(XRayGizmoService.RebuildAll) { text = "Refresh" };
+            var refresh = new Button(() =>
+            {
+                XRayGizmoService.RebuildAll();
+                XRayWeightPaintService.RebuildAll();
+            })
+            { text = "Refresh" };
             refresh.AddToClassList("xray-back");
             controls.Add(refresh);
-            var clear = new Button(() => XRayGizmoService.SetEnabled(false)) { text = "Clear" };
+            var clear = new Button(() =>
+            {
+                XRayGizmoService.SetEnabled(false);
+                XRayWeightPaintService.SetEnabled(false);
+            })
+            { text = "Clear" };
             clear.AddToClassList("xray-back");
             controls.Add(clear);
             content.Add(controls);
@@ -183,11 +218,67 @@ namespace Orbiters.XRayGizmos.Editor
             content.Add(row);
         }
 
+        private void SummaryRow(string key, string value)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("xray-summary-row");
+
+            var k = new Label(key);
+            k.AddToClassList("xray-summary-key");
+            row.Add(k);
+
+            var v = new Label(value);
+            v.AddToClassList("xray-summary-value");
+            row.Add(v);
+
+            content.Add(row);
+        }
+
         private string DescribeSelectedTarget()
         {
             return XRayGizmoTargetFinder.TryResolveTarget(Selection.activeGameObject, out var selected)
                 ? selected.DisplayName
                 : "None";
+        }
+
+        private static string FormatRenderers(IReadOnlyList<SkinnedMeshRenderer> renderers)
+        {
+            if (renderers == null || renderers.Count == 0)
+            {
+                return "-";
+            }
+
+            return FormatNames(renderers, renderer => renderer != null ? renderer.name : null);
+        }
+
+        private static string FormatTransforms(IReadOnlyList<Transform> transforms)
+        {
+            if (transforms == null || transforms.Count == 0)
+            {
+                return "-";
+            }
+
+            return FormatNames(transforms, transform => transform != null ? transform.name : null);
+        }
+
+        private static string FormatNames<T>(IReadOnlyList<T> items, Func<T, string> getName)
+        {
+            var names = new List<string>();
+            for (int i = 0; i < items.Count && names.Count < 4; i++)
+            {
+                string name = getName(items[i]);
+                if (!string.IsNullOrEmpty(name))
+                {
+                    names.Add(name);
+                }
+            }
+
+            if (items.Count > names.Count)
+            {
+                names.Add("+" + (items.Count - names.Count));
+            }
+
+            return names.Count > 0 ? string.Join(", ", names) : "-";
         }
 
         private void Question(string text)

@@ -6,7 +6,8 @@ namespace Orbiters.XRayGizmos.Editor
 {
     public static class XRayArmatureMeshGenerator
     {
-        public const string MeshObjectNamePrefix = "__XRayGizmos_Armature";
+        public const string GizmoObjectNamePrefix = "__XRayGizmos_";
+        public const string MeshObjectNamePrefix = GizmoObjectNamePrefix + "Armature";
 
         public static bool TryCreate(
             GameObject targetRoot,
@@ -163,7 +164,12 @@ namespace Orbiters.XRayGizmos.Editor
             return MeshObjectNamePrefix + "_" + armatureKey;
         }
 
-        public static bool IsGizmoObject(GameObject go)
+        public static bool IsPackageGizmoObject(GameObject go)
+        {
+            return go != null && go.name.StartsWith(GizmoObjectNamePrefix, System.StringComparison.Ordinal);
+        }
+
+        public static bool IsArmatureGizmoObject(GameObject go)
         {
             return go != null && go.name.StartsWith(MeshObjectNamePrefix, System.StringComparison.Ordinal);
         }
@@ -232,7 +238,7 @@ namespace Orbiters.XRayGizmos.Editor
         public static bool IsUsableRenderer(SkinnedMeshRenderer renderer)
         {
             return renderer != null &&
-                   !IsGizmoObject(renderer.gameObject) &&
+                   !IsPackageGizmoObject(renderer.gameObject) &&
                    renderer.rootBone != null &&
                    renderer.bones != null &&
                    renderer.bones.Length > 0;

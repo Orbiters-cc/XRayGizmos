@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "license": "LicenseRef-XRayGizmos-Proprietary",
   "unity": "2022.3",
-  "description": "Unity editor xray armature gizmos for selected objects or loaded scenes.",
+  "description": "Unity editor xray armature and weight paint gizmos for selected objects or loaded scenes.",
   "type": "tool",
   "dependencies": {},
   "gitDependencies": {},

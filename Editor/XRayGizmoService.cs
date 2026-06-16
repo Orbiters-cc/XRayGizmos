@@ -365,7 +365,7 @@ namespace Orbiters.XRayGizmos.Editor
         {
             foreach (var go in Resources.FindObjectsOfTypeAll<GameObject>())
             {
-                if (XRayArmatureMeshGenerator.IsGizmoObject(go))
+                if (XRayArmatureMeshGenerator.IsArmatureGizmoObject(go))
                 {
                     UnityEngine.Object.DestroyImmediate(go);
                 }
