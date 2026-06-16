@@ -13,6 +13,10 @@ The window can display armatures for the active selection, a pinned object, or
 every skinned armature found in loaded scenes. Generated gizmo objects are hidden,
 editor-only, and not saved into the scene.
 
+Clickable scene bones can be enabled from the window. When enabled, hovering an
+xray bone in the Scene view draws a white highlight, and clicking selects the
+matching bone transform in the hierarchy.
+
 Weight paint mode overlays Blender-style weight colors on selected skinned meshes
 for the selected bone transforms. Selecting only a bone searches loaded scenes for
 skinned meshes with positive weight on that bone. Selecting an `Armature` object
@@ -26,5 +30,7 @@ armature/root.
 - Multiple meshes pointing to the same resolved armature are displayed once.
 - Armature geometry is generated from the selected renderer's bone array and
   follows the live bones through a `SkinnedMeshRenderer`.
+- Scene bone picking uses the displayed xray armature segments and selects the
+  matching source bone transform, not the hidden gizmo object.
 - Weight paint uses a blue, cyan, green, yellow, red ramp over cloned editor-only
   skinned meshes, leaving source mesh assets untouched.

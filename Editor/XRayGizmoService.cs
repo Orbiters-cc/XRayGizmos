@@ -80,6 +80,20 @@ namespace Orbiters.XRayGizmos.Editor
             }
         }
 
+        public static IReadOnlyList<XRayBoneSegment> ActiveBoneSegments
+        {
+            get
+            {
+                var segments = new List<XRayBoneSegment>();
+                foreach (var instance in Instances.Values)
+                {
+                    AppendSegments(instance.Target, segments);
+                }
+
+                return segments;
+            }
+        }
+
         public static void SetEnabled(bool enabled)
         {
             if (Enabled == enabled)
@@ -407,6 +421,39 @@ namespace Orbiters.XRayGizmos.Editor
             Changed?.Invoke();
         }
 
+        private static void AppendSegments(XRayArmatureTarget target, List<XRayBoneSegment> segments)
+        {
+            if (!target.IsValid || target.Renderer.bones == null)
+            {
+                return;
+            }
+
+            var boneSet = new HashSet<Transform>();
+            foreach (var bone in target.Renderer.bones)
+            {
+                if (bone != null)
+                {
+                    boneSet.Add(bone);
+                }
+            }
+
+            foreach (var bone in target.Renderer.bones)
+            {
+                if (bone == null)
+                {
+                    continue;
+                }
+
+                foreach (Transform child in bone)
+                {
+                    if (child != null && boneSet.Contains(child))
+                    {
+                        segments.Add(new XRayBoneSegment(target.Owner, bone, child));
+                    }
+                }
+            }
+        }
+
         private readonly struct Instance
         {
             public readonly XRayArmatureTarget Target;
@@ -420,5 +467,21 @@ namespace Orbiters.XRayGizmos.Editor
                 Revision = revision;
             }
         }
+    }
+
+    public readonly struct XRayBoneSegment
+    {
+        public readonly GameObject Owner;
+        public readonly Transform Bone;
+        public readonly Transform Child;
+
+        public XRayBoneSegment(GameObject owner, Transform bone, Transform child)
+        {
+            Owner = owner;
+            Bone = bone;
+            Child = child;
+        }
+
+        public bool IsValid => Owner != null && Bone != null && Child != null;
     }
 }

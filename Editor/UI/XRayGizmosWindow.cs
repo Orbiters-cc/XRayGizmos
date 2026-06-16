@@ -24,6 +24,7 @@ namespace Orbiters.XRayGizmos.Editor
         private void OnEnable()
         {
             XRayGizmoService.Changed += Render;
+            XRayBonePickingService.Changed += Render;
             XRayWeightPaintService.Changed += Render;
             Selection.selectionChanged += Render;
         }
@@ -31,6 +32,7 @@ namespace Orbiters.XRayGizmos.Editor
         private void OnDisable()
         {
             XRayGizmoService.Changed -= Render;
+            XRayBonePickingService.Changed -= Render;
             XRayWeightPaintService.Changed -= Render;
             Selection.selectionChanged -= Render;
         }
@@ -132,6 +134,18 @@ namespace Orbiters.XRayGizmos.Editor
             color.AddToClassList("xray-field");
             color.RegisterValueChangedCallback(evt => XRayGizmoService.SetColor(evt.newValue));
             content.Add(color);
+
+            var clickableBones = new Toggle("Clickable scene bones") { value = XRayBonePickingService.Enabled };
+            clickableBones.AddToClassList("xray-field");
+            clickableBones.RegisterValueChangedCallback(evt => XRayBonePickingService.SetEnabled(evt.newValue));
+            content.Add(clickableBones);
+
+            if (XRayBonePickingService.Enabled)
+            {
+                var hovered = XRayBonePickingService.HoveredBone;
+                SummaryRow("Hover", hovered != null ? hovered.name : "-");
+                Help("Hover xray bones in the Scene view for a white highlight; click to select the matching bone transform.");
+            }
 
             Section("Weight paint");
 
