@@ -15,13 +15,19 @@ editor-only, and not saved into the scene.
 
 Clickable scene bones can be enabled from the window. When enabled, hovering an
 xray bone in the Scene view draws a white highlight, and clicking selects the
-matching bone transform in the hierarchy.
+matching bone transform in the hierarchy. Selected bones are also highlighted in
+white while the xray armature display is active.
 
 Weight paint mode overlays Blender-style weight colors on selected skinned meshes
 for the selected bone transforms. Selecting only a bone searches loaded scenes for
 skinned meshes with positive weight on that bone. Selecting an `Armature` object
 or a renderer's root bone displays the combined weight of all bones under that
 armature/root.
+
+Mesh edge mode overlays polygon edges on selected skinned meshes. If only a bone
+or armature root is selected, it searches loaded scenes for skinned meshes using
+that bone or armature. The edge overlay uses optimized editor-only skinned edge
+meshes with configurable color and opacity.
 
 ## Notes
 
@@ -34,3 +40,5 @@ armature/root.
   matching source bone transform, not the hidden gizmo object.
 - Weight paint uses a blue, cyan, green, yellow, red ramp over cloned editor-only
   skinned meshes, leaving source mesh assets untouched.
+- Mesh edges are generated from source mesh vertices, active blendshape
+  deformation, and bone weights, leaving source mesh assets untouched.

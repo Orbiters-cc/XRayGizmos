@@ -20,7 +20,8 @@ namespace Orbiters.XRayGizmos.Editor
         public XRayGizmosSceneToolbarOverlay()
             : base(
                 XRayBonesToolbarToggle.Id,
-                XRayWeightPaintToolbarToggle.Id)
+                XRayWeightPaintToolbarToggle.Id,
+                XRayMeshEdgesToolbarToggle.Id)
         {
         }
     }
@@ -204,13 +205,130 @@ namespace Orbiters.XRayGizmos.Editor
         }
     }
 
+    [EditorToolbarElement(Id, typeof(SceneView))]
+    internal sealed class XRayMeshEdgesToolbarToggle : EditorToolbarDropdownToggle
+    {
+        public const string Id = "Orbiters/XRayGizmos/MeshEdges";
+
+        private bool isSyncing;
+        private bool isListening;
+
+        public XRayMeshEdgesToolbarToggle()
+        {
+            icon = XRayGizmosSceneToolbarIcons.LoadMeshEdgesIcon();
+            this.RegisterValueChangedCallback(OnValueChanged);
+            RegisterCallback<AttachToPanelEvent>(_ => Attach());
+            RegisterCallback<DetachFromPanelEvent>(_ => Detach());
+            dropdownClicked += ShowSettings;
+            Attach();
+            SyncFromServices();
+        }
+
+        private void OnValueChanged(ChangeEvent<bool> evt)
+        {
+            if (isSyncing)
+            {
+                return;
+            }
+
+            XRayMeshEdgeService.SetEnabled(evt.newValue);
+        }
+
+        private void ShowSettings()
+        {
+            UnityEditor.PopupWindow.Show(worldBound, new XRayMeshEdgesPopupContent());
+        }
+
+        private void SyncFromServices()
+        {
+            isSyncing = true;
+            SetValueWithoutNotify(XRayMeshEdgeService.Enabled);
+            isSyncing = false;
+            tooltip = XRayMeshEdgeService.Enabled
+                ? XRayMeshEdgeService.LastStatus ?? "Hide mesh polygon edges."
+                : "Show mesh polygon edges for selected skinned meshes.";
+        }
+
+        private void Attach()
+        {
+            if (isListening)
+            {
+                return;
+            }
+
+            isListening = true;
+            XRayMeshEdgeService.Changed += SyncFromServices;
+        }
+
+        private void Detach()
+        {
+            if (!isListening)
+            {
+                return;
+            }
+
+            isListening = false;
+            XRayMeshEdgeService.Changed -= SyncFromServices;
+        }
+    }
+
+    internal sealed class XRayMeshEdgesPopupContent : PopupWindowContent
+    {
+        public override Vector2 GetWindowSize()
+        {
+            return new Vector2(250f, 118f);
+        }
+
+        public override void OnGUI(Rect rect)
+        {
+            EditorGUILayout.Space(4f);
+
+            EditorGUI.BeginChangeCheck();
+            bool enabled = EditorGUILayout.Toggle("Show edges", XRayMeshEdgeService.Enabled);
+            if (EditorGUI.EndChangeCheck())
+            {
+                XRayMeshEdgeService.SetEnabled(enabled);
+            }
+
+            EditorGUI.BeginChangeCheck();
+            float alpha = EditorGUILayout.Slider("Opacity", XRayMeshEdgeService.EdgeAlpha, 0.05f, 1f);
+            if (EditorGUI.EndChangeCheck())
+            {
+                XRayMeshEdgeService.SetEdgeAlpha(alpha);
+            }
+
+            EditorGUI.BeginChangeCheck();
+            var color = EditorGUILayout.ColorField("Color", XRayMeshEdgeService.EdgeColor);
+            if (EditorGUI.EndChangeCheck())
+            {
+                XRayMeshEdgeService.SetEdgeColor(color);
+            }
+
+            EditorGUILayout.Space(4f);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Refresh"))
+                {
+                    XRayMeshEdgeService.RebuildAll();
+                }
+
+                if (GUILayout.Button("Open Window"))
+                {
+                    XRayGizmosWindow.Open();
+                }
+            }
+        }
+    }
+
     internal static class XRayGizmosSceneToolbarIcons
     {
         public const string BonesIconPath = XRayGizmosPackage.BasePath + "/Editor/UI/Icons/xray-bones.png";
         private const string WeightPaintIconPath = XRayGizmosPackage.BasePath + "/Editor/UI/Icons/xray-weight-paint.png";
+        private const string MeshEdgesIconPath = XRayGizmosPackage.BasePath + "/Editor/UI/Icons/xray-mesh-edges.png";
 
         private static Texture2D bonesIcon;
         private static Texture2D weightPaintIcon;
+        private static Texture2D meshEdgesIcon;
 
         public static Texture2D LoadBonesIcon()
         {
@@ -224,6 +342,13 @@ namespace Orbiters.XRayGizmos.Editor
             return weightPaintIcon != null
                 ? weightPaintIcon
                 : weightPaintIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(WeightPaintIconPath);
+        }
+
+        public static Texture2D LoadMeshEdgesIcon()
+        {
+            return meshEdgesIcon != null
+                ? meshEdgesIcon
+                : meshEdgesIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(MeshEdgesIconPath);
         }
     }
 }

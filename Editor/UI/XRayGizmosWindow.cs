@@ -26,6 +26,7 @@ namespace Orbiters.XRayGizmos.Editor
             XRayGizmoService.Changed += Render;
             XRayBonePickingService.Changed += Render;
             XRayWeightPaintService.Changed += Render;
+            XRayMeshEdgeService.Changed += Render;
             Selection.selectionChanged += Render;
         }
 
@@ -34,6 +35,7 @@ namespace Orbiters.XRayGizmos.Editor
             XRayGizmoService.Changed -= Render;
             XRayBonePickingService.Changed -= Render;
             XRayWeightPaintService.Changed -= Render;
+            XRayMeshEdgeService.Changed -= Render;
             Selection.selectionChanged -= Render;
         }
 
@@ -170,12 +172,40 @@ namespace Orbiters.XRayGizmos.Editor
                 Help(XRayWeightPaintService.LastStatus ?? "No weight paint overlay is currently visible.");
             }
 
+            Section("Mesh edges");
+
+            var meshEdges = new Toggle("Show mesh polygon edges") { value = XRayMeshEdgeService.Enabled };
+            meshEdges.AddToClassList("xray-field");
+            meshEdges.RegisterValueChangedCallback(evt => XRayMeshEdgeService.SetEnabled(evt.newValue));
+            content.Add(meshEdges);
+
+            var edgeAlpha = new Slider("Edge opacity", 0.05f, 1f)
+            {
+                value = XRayMeshEdgeService.EdgeAlpha,
+                showInputField = true
+            };
+            edgeAlpha.AddToClassList("xray-field");
+            edgeAlpha.RegisterValueChangedCallback(evt => XRayMeshEdgeService.SetEdgeAlpha(evt.newValue));
+            content.Add(edgeAlpha);
+
+            var edgeColor = new ColorField("Edge color") { value = XRayMeshEdgeService.EdgeColor };
+            edgeColor.AddToClassList("xray-field");
+            edgeColor.RegisterValueChangedCallback(evt => XRayMeshEdgeService.SetEdgeColor(evt.newValue));
+            content.Add(edgeColor);
+
+            if (XRayMeshEdgeService.Enabled)
+            {
+                SummaryRow("Meshes", FormatRenderers(XRayMeshEdgeService.ActiveRenderers));
+                Help(XRayMeshEdgeService.LastStatus ?? "No mesh edge overlay is currently visible.");
+            }
+
             var controls = new VisualElement();
             controls.AddToClassList("xray-row");
             var refresh = new Button(() =>
             {
                 XRayGizmoService.RebuildAll();
                 XRayWeightPaintService.RebuildAll();
+                XRayMeshEdgeService.RebuildAll();
             })
             { text = "Refresh" };
             refresh.AddToClassList("xray-back");
@@ -184,6 +214,7 @@ namespace Orbiters.XRayGizmos.Editor
             {
                 XRayGizmoService.SetEnabled(false);
                 XRayWeightPaintService.SetEnabled(false);
+                XRayMeshEdgeService.SetEnabled(false);
             })
             { text = "Clear" };
             clear.AddToClassList("xray-back");

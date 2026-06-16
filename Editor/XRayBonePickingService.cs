@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Orbiters.XRayGizmos;
 using UnityEditor;
 using UnityEngine;
@@ -11,6 +12,9 @@ namespace Orbiters.XRayGizmos.Editor
     {
         private const string EnabledKey = "Orbiters.XRayGizmos.BonePicking.Enabled";
         private const float PickRadiusPixels = 12f;
+        private const float HoverLineWidth = 8f;
+        private const float SelectedLineWidth = 7f;
+        private const float BoneCapScale = 0.018f;
 
         private static XRayBoneSegment hoveredSegment;
         private static double lastRepaintTime;
@@ -57,7 +61,7 @@ namespace Orbiters.XRayGizmos.Editor
                 sceneView.wantsMouseMove = Enabled;
             }
 
-            if (!Enabled || !XRayGizmoService.Enabled)
+            if (!XRayGizmoService.Enabled)
             {
                 if (hoveredSegment.IsValid)
                 {
@@ -72,11 +76,19 @@ namespace Orbiters.XRayGizmos.Editor
                 return;
             }
 
-            UpdateHover(evt.mousePosition);
+            if (Enabled)
+            {
+                UpdateHover(evt.mousePosition);
+            }
+            else if (hoveredSegment.IsValid)
+            {
+                ClearHover();
+            }
 
             if (evt.type == EventType.MouseDown &&
                 evt.button == 0 &&
                 !evt.alt &&
+                Enabled &&
                 hoveredSegment.IsValid)
             {
                 SelectHoveredBone();
@@ -84,9 +96,13 @@ namespace Orbiters.XRayGizmos.Editor
                 return;
             }
 
-            if (evt.type == EventType.Repaint && hoveredSegment.IsValid)
+            if (evt.type == EventType.Repaint)
             {
-                DrawHoverHighlight();
+                DrawSelectedHighlights();
+                if (Enabled && hoveredSegment.IsValid)
+                {
+                    DrawSegmentHighlight(hoveredSegment, HoverLineWidth);
+                }
             }
         }
 
@@ -173,9 +189,30 @@ namespace Orbiters.XRayGizmos.Editor
             return Vector2.Distance(point, a + ab * t);
         }
 
-        private static void DrawHoverHighlight()
+        private static void DrawSelectedHighlights()
         {
-            if (!hoveredSegment.IsValid)
+            var selectedTransforms = Selection.transforms;
+            if (selectedTransforms == null || selectedTransforms.Length == 0)
+            {
+                return;
+            }
+
+            var selected = new HashSet<Transform>(selectedTransforms);
+            foreach (var segment in XRayGizmoService.ActiveBoneSegments)
+            {
+                if (!segment.IsValid ||
+                    (!selected.Contains(segment.Bone) && !selected.Contains(segment.Child)))
+                {
+                    continue;
+                }
+
+                DrawSegmentHighlight(segment, SelectedLineWidth);
+            }
+        }
+
+        private static void DrawSegmentHighlight(XRayBoneSegment segment, float lineWidth)
+        {
+            if (!segment.IsValid)
             {
                 return;
             }
@@ -186,12 +223,12 @@ namespace Orbiters.XRayGizmos.Editor
                 using (new Handles.DrawingScope(Color.white))
                 {
                     Handles.zTest = CompareFunction.Always;
-                    Handles.DrawAAPolyLine(8f, hoveredSegment.Bone.position, hoveredSegment.Child.position);
+                    Handles.DrawAAPolyLine(lineWidth, segment.Bone.position, segment.Child.position);
 
-                    float handleSize = HandleUtility.GetHandleSize(hoveredSegment.Bone.position) * 0.025f;
+                    float handleSize = HandleUtility.GetHandleSize(segment.Bone.position) * BoneCapScale;
                     Handles.SphereHandleCap(
                         0,
-                        hoveredSegment.Bone.position,
+                        segment.Bone.position,
                         Quaternion.identity,
                         handleSize,
                         EventType.Repaint);
