@@ -444,14 +444,69 @@ namespace Orbiters.XRayGizmos.Editor
                     continue;
                 }
 
+                bool hasDisplayedChild = false;
                 foreach (Transform child in bone)
                 {
                     if (child != null && boneSet.Contains(child))
                     {
+                        hasDisplayedChild = true;
                         segments.Add(new XRayBoneSegment(target.Owner, bone, child));
                     }
                 }
+
+                if (!hasDisplayedChild && TryGetLeafTailPosition(bone, boneSet, out var leafTail))
+                {
+                    segments.Add(new XRayBoneSegment(target.Owner, bone, leafTail));
+                }
             }
+        }
+
+        private static bool TryGetLeafTailPosition(Transform bone, HashSet<Transform> boneSet, out Vector3 tailPosition)
+        {
+            tailPosition = default;
+            if (bone == null)
+            {
+                return false;
+            }
+
+            Vector3 childDirection = Vector3.zero;
+            float childLength = 0f;
+            foreach (Transform child in bone)
+            {
+                if (child == null || boneSet.Contains(child))
+                {
+                    continue;
+                }
+
+                var delta = child.position - bone.position;
+                if (delta.sqrMagnitude < 0.000001f)
+                {
+                    continue;
+                }
+
+                childDirection += delta.normalized;
+                childLength = Mathf.Max(childLength, delta.magnitude);
+            }
+
+            if (childDirection.sqrMagnitude > 0.000001f)
+            {
+                tailPosition = bone.position + childDirection.normalized * Mathf.Clamp(childLength, 0.025f, 0.2f);
+                return true;
+            }
+
+            if (bone.parent != null && boneSet.Contains(bone.parent))
+            {
+                var delta = bone.position - bone.parent.position;
+                if (delta.sqrMagnitude > 0.000001f)
+                {
+                    tailPosition = bone.position + delta.normalized * Mathf.Clamp(delta.magnitude * 0.45f, 0.025f, 0.15f);
+                    return true;
+                }
+            }
+
+            var fallback = bone.up.sqrMagnitude > 0.000001f ? bone.up : Vector3.up;
+            tailPosition = bone.position + fallback.normalized * 0.05f;
+            return true;
         }
 
         private readonly struct Instance
@@ -474,14 +529,31 @@ namespace Orbiters.XRayGizmos.Editor
         public readonly GameObject Owner;
         public readonly Transform Bone;
         public readonly Transform Child;
+        public readonly Vector3 TailPosition;
+        public readonly bool HasTailPosition;
 
         public XRayBoneSegment(GameObject owner, Transform bone, Transform child)
         {
             Owner = owner;
             Bone = bone;
             Child = child;
+            TailPosition = default;
+            HasTailPosition = false;
         }
 
-        public bool IsValid => Owner != null && Bone != null && Child != null;
+        public XRayBoneSegment(GameObject owner, Transform bone, Vector3 tailPosition)
+        {
+            Owner = owner;
+            Bone = bone;
+            Child = null;
+            TailPosition = tailPosition;
+            HasTailPosition = true;
+        }
+
+        public bool IsValid => Owner != null && Bone != null && (Child != null || HasTailPosition);
+
+        public bool IsLeaf => IsValid && Child == null;
+
+        public Vector3 EndPosition => Child != null ? Child.position : TailPosition;
     }
 }

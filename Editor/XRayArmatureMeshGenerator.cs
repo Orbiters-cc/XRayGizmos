@@ -97,10 +97,12 @@ namespace Orbiters.XRayGizmos.Editor
                     continue;
                 }
 
+                bool hasDisplayedChild = false;
                 foreach (Transform child in bone)
                 {
                     if (child != null && boneIndexMap.ContainsKey(child))
                     {
+                        hasDisplayedChild = true;
                         GenerateBoneGeometry(
                             bone,
                             child,
@@ -111,6 +113,19 @@ namespace Orbiters.XRayGizmos.Editor
                             boneWeights,
                             boneIndexMap);
                     }
+                }
+
+                if (!hasDisplayedChild && TryGetLeafTailPosition(bone, boneIndexMap, out var leafTail))
+                {
+                    GenerateBoneGeometry(
+                        bone,
+                        leafTail,
+                        meshType,
+                        baseThickness,
+                        vertices,
+                        triangles,
+                        boneWeights,
+                        boneIndexMap);
                 }
             }
 
@@ -284,10 +299,35 @@ namespace Orbiters.XRayGizmos.Editor
             List<BoneWeight> boneWeights,
             IReadOnlyDictionary<Transform, int> boneIndexMap)
         {
+            if (boneTail == null)
+            {
+                return;
+            }
+
+            GenerateBoneGeometry(
+                boneHead,
+                boneTail.position,
+                meshType,
+                baseThickness,
+                vertices,
+                triangles,
+                boneWeights,
+                boneIndexMap);
+        }
+
+        private static void GenerateBoneGeometry(
+            Transform boneHead,
+            Vector3 tailPos,
+            XRayArmatureMeshType meshType,
+            float baseThickness,
+            List<Vector3> vertices,
+            List<int> triangles,
+            List<BoneWeight> boneWeights,
+            IReadOnlyDictionary<Transform, int> boneIndexMap)
+        {
             int firstVertex = vertices.Count;
 
             Vector3 headPos = boneHead.position;
-            Vector3 tailPos = boneTail.position;
             Vector3 boneVector = tailPos - headPos;
             if (boneVector.magnitude < 0.001f)
             {
@@ -380,6 +420,57 @@ namespace Orbiters.XRayGizmos.Editor
             {
                 boneWeights.Add(weight);
             }
+        }
+
+        private static bool TryGetLeafTailPosition(
+            Transform bone,
+            IReadOnlyDictionary<Transform, int> boneIndexMap,
+            out Vector3 tailPosition)
+        {
+            tailPosition = default;
+            if (bone == null)
+            {
+                return false;
+            }
+
+            Vector3 childDirection = Vector3.zero;
+            float childLength = 0f;
+            foreach (Transform child in bone)
+            {
+                if (child == null || boneIndexMap.ContainsKey(child))
+                {
+                    continue;
+                }
+
+                var delta = child.position - bone.position;
+                if (delta.sqrMagnitude < 0.000001f)
+                {
+                    continue;
+                }
+
+                childDirection += delta.normalized;
+                childLength = Mathf.Max(childLength, delta.magnitude);
+            }
+
+            if (childDirection.sqrMagnitude > 0.000001f)
+            {
+                tailPosition = bone.position + childDirection.normalized * Mathf.Clamp(childLength, 0.025f, 0.2f);
+                return true;
+            }
+
+            if (bone.parent != null && boneIndexMap.ContainsKey(bone.parent))
+            {
+                var delta = bone.position - bone.parent.position;
+                if (delta.sqrMagnitude > 0.000001f)
+                {
+                    tailPosition = bone.position + delta.normalized * Mathf.Clamp(delta.magnitude * 0.45f, 0.025f, 0.15f);
+                    return true;
+                }
+            }
+
+            var fallback = bone.up.sqrMagnitude > 0.000001f ? bone.up : Vector3.up;
+            tailPosition = bone.position + fallback.normalized * 0.05f;
+            return true;
         }
     }
 }

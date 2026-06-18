@@ -137,7 +137,8 @@ namespace Orbiters.XRayGizmos.Editor
                 }
 
                 float distance = DistanceToSegment(mousePosition, a, b);
-                if (distance < bestDistance)
+                if (distance < bestDistance ||
+                    (Mathf.Abs(distance - bestDistance) < 0.001f && segment.IsLeaf && !best.IsLeaf))
                 {
                     bestDistance = distance;
                     best = segment;
@@ -159,7 +160,7 @@ namespace Orbiters.XRayGizmos.Editor
             }
 
             Vector3 head = segment.Bone.position;
-            Vector3 tail = segment.Child.position;
+            Vector3 tail = segment.EndPosition;
             if ((tail - head).sqrMagnitude < 0.000001f)
             {
                 return false;
@@ -223,7 +224,7 @@ namespace Orbiters.XRayGizmos.Editor
                 using (new Handles.DrawingScope(Color.white))
                 {
                     Handles.zTest = CompareFunction.Always;
-                    Handles.DrawAAPolyLine(lineWidth, segment.Bone.position, segment.Child.position);
+                    Handles.DrawAAPolyLine(lineWidth, segment.Bone.position, segment.EndPosition);
 
                     float handleSize = HandleUtility.GetHandleSize(segment.Bone.position) * BoneCapScale;
                     Handles.SphereHandleCap(
