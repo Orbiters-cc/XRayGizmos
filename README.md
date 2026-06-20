@@ -29,6 +29,10 @@ or armature root is selected, it searches loaded scenes for skinned meshes using
 that bone or armature. The edge overlay uses optimized editor-only skinned edge
 meshes with configurable color and opacity.
 
+ReFit debug labels are drawn automatically while ReFit debug mode is enabled.
+Each ReFit debug snapshot gets a readable Scene view label with a connector line
+to the snapshot, and nearby labels are separated to reduce overlap.
+
 ## Notes
 
 - The package has no dependency on MCB or the VRChat SDK.
@@ -42,3 +46,6 @@ meshes with configurable color and opacity.
   skinned meshes, leaving source mesh assets untouched.
 - Mesh edges are generated from source mesh vertices, active blendshape
   deformation, and bone weights, leaving source mesh assets untouched.
+- Scene labels are editor-only GUI overlays; ReFit debug labels are detected from
+  ReFit's debug snapshot naming and editor preference without a package
+  dependency.
