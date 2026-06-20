@@ -21,7 +21,8 @@ namespace Orbiters.XRayGizmos.Editor
             : base(
                 XRayBonesToolbarToggle.Id,
                 XRayWeightPaintToolbarToggle.Id,
-                XRayMeshEdgesToolbarToggle.Id)
+                XRayMeshEdgesToolbarToggle.Id,
+                XRayExtraToolbarToggle.Id)
         {
         }
     }
@@ -272,6 +273,87 @@ namespace Orbiters.XRayGizmos.Editor
         }
     }
 
+    [EditorToolbarElement(Id, typeof(SceneView))]
+    internal sealed class XRayExtraToolbarToggle : EditorToolbarDropdownToggle
+    {
+        public const string Id = "Orbiters/XRayGizmos/Extra";
+
+        private bool isSyncing;
+        private bool isListening;
+
+        public XRayExtraToolbarToggle()
+        {
+            icon = XRayGizmosSceneToolbarIcons.LoadExtraIcon();
+            this.RegisterValueChangedCallback(OnValueChanged);
+            RegisterCallback<AttachToPanelEvent>(_ => Attach());
+            RegisterCallback<DetachFromPanelEvent>(_ => Detach());
+            dropdownClicked += ShowMenu;
+            Attach();
+            SyncFromRegistry();
+        }
+
+        private void OnValueChanged(ChangeEvent<bool> evt)
+        {
+            if (isSyncing) return;
+            XRayExternalGizmoRegistry.SetAll(evt.newValue);
+        }
+
+        private void ShowMenu()
+        {
+            var menu = new GenericMenu();
+            var entries = XRayExternalGizmoRegistry.Entries;
+            if (entries.Count == 0)
+            {
+                menu.AddDisabledItem(new GUIContent("No extra gizmos registered"));
+            }
+            else
+            {
+                foreach (var entry in entries)
+                {
+                    var label = string.IsNullOrEmpty(entry.Tooltip)
+                        ? entry.DisplayName
+                        : $"{entry.DisplayName} - {entry.Tooltip}";
+                    menu.AddItem(new GUIContent(label), entry.IsEnabled, () =>
+                    {
+                        entry.SetEnabled(!entry.IsEnabled);
+                        XRayExternalGizmoRegistry.NotifyChanged();
+                        SceneView.RepaintAll();
+                    });
+                }
+
+                menu.AddSeparator(string.Empty);
+                menu.AddItem(new GUIContent("Enable all"), false, () => XRayExternalGizmoRegistry.SetAll(true));
+                menu.AddItem(new GUIContent("Disable all"), false, () => XRayExternalGizmoRegistry.SetAll(false));
+            }
+
+            menu.DropDown(worldBound);
+        }
+
+        private void SyncFromRegistry()
+        {
+            isSyncing = true;
+            SetValueWithoutNotify(XRayExternalGizmoRegistry.AnyEnabled);
+            isSyncing = false;
+            tooltip = XRayExternalGizmoRegistry.Entries.Count > 0
+                ? "Extra scene gizmos from external tools."
+                : "No extra scene gizmos are registered.";
+        }
+
+        private void Attach()
+        {
+            if (isListening) return;
+            isListening = true;
+            XRayExternalGizmoRegistry.Changed += SyncFromRegistry;
+        }
+
+        private void Detach()
+        {
+            if (!isListening) return;
+            isListening = false;
+            XRayExternalGizmoRegistry.Changed -= SyncFromRegistry;
+        }
+    }
+
     internal sealed class XRayMeshEdgesPopupContent : PopupWindowContent
     {
         public override Vector2 GetWindowSize()
@@ -329,6 +411,7 @@ namespace Orbiters.XRayGizmos.Editor
         private static Texture2D bonesIcon;
         private static Texture2D weightPaintIcon;
         private static Texture2D meshEdgesIcon;
+        private static Texture2D extraIcon;
 
         public static Texture2D LoadBonesIcon()
         {
@@ -349,6 +432,37 @@ namespace Orbiters.XRayGizmos.Editor
             return meshEdgesIcon != null
                 ? meshEdgesIcon
                 : meshEdgesIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(MeshEdgesIconPath);
+        }
+
+        public static Texture2D LoadExtraIcon()
+        {
+            if (extraIcon != null) return extraIcon;
+            var builtIn = EditorGUIUtility.IconContent("d_Settings Icon").image as Texture2D ??
+                          EditorGUIUtility.IconContent("_Popup").image as Texture2D;
+            if (builtIn != null)
+            {
+                extraIcon = builtIn;
+                return extraIcon;
+            }
+
+            extraIcon = new Texture2D(16, 16, TextureFormat.RGBA32, false)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            var clear = new Color(0f, 0f, 0f, 0f);
+            var color = EditorGUIUtility.isProSkin ? new Color(0.82f, 0.82f, 0.82f, 1f) : new Color(0.18f, 0.18f, 0.18f, 1f);
+            for (int y = 0; y < 16; y++)
+            {
+                for (int x = 0; x < 16; x++)
+                {
+                    bool dot = (x >= 3 && x <= 5 && y >= 7 && y <= 9) ||
+                               (x >= 7 && x <= 9 && y >= 7 && y <= 9) ||
+                               (x >= 11 && x <= 13 && y >= 7 && y <= 9);
+                    extraIcon.SetPixel(x, y, dot ? color : clear);
+                }
+            }
+            extraIcon.Apply();
+            return extraIcon;
         }
     }
 }
