@@ -255,7 +255,8 @@ namespace Orbiters.XRayGizmos.Editor
 
         private static bool SameSegment(XRayBoneSegment a, XRayBoneSegment b)
         {
-            return a.Bone == b.Bone && a.Child == b.Child;
+            return a.Owner == b.Owner && a.Bone == b.Bone && a.Child == b.Child &&
+                a.HasTailPosition == b.HasTailPosition && (!a.HasTailPosition || a.TailPosition == b.TailPosition);
         }
 
         private static void ClearHover()

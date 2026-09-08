@@ -512,7 +512,9 @@ namespace Orbiters.XRayGizmos.Editor
             for (int shape = 0; shape < sourceMesh.blendShapeCount; shape++)
             {
                 float weight = renderer.GetBlendShapeWeight(shape);
-                if (Mathf.Abs(weight) <= BlendShapeWeightEpsilon)
+                // Zero can interpolate nonzero deltas when multiple frames start below zero.
+                if (weight == 0f && (sourceMesh.GetBlendShapeFrameCount(shape) <= 1 ||
+                    sourceMesh.GetBlendShapeFrameWeight(shape, 0) >= 0f))
                 {
                     continue;
                 }
@@ -589,6 +591,7 @@ namespace Orbiters.XRayGizmos.Editor
             {
                 int lastFrame = frameCount - 1;
                 float frameWeight = sourceMesh.GetBlendShapeFrameWeight(shape, lastFrame);
+                float previousWeight = sourceMesh.GetBlendShapeFrameWeight(shape, lastFrame - 1);
                 sourceMesh.GetBlendShapeFrameVertices(
                     shape,
                     lastFrame,
@@ -601,7 +604,9 @@ namespace Orbiters.XRayGizmos.Editor
                     normals,
                     scratch.DeltaVerticesA,
                     scratch.DeltaNormalsA,
-                    GetBlendShapeScale(weight, frameWeight));
+                    // Unity drops the previous frame's contribution above the last frame,
+                    // but keeps scaling the last delta over that final frame interval.
+                    GetBlendShapeScale(weight - previousWeight, frameWeight - previousWeight));
                 return;
             }
 

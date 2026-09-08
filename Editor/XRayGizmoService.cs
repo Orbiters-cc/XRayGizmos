@@ -20,12 +20,14 @@ namespace Orbiters.XRayGizmos.Editor
         private static bool isRefreshing;
         private static Material material;
         private static int settingsRevision;
+        private static double nextGeometryCheck;
 
         public static event Action Changed;
 
         static XRayGizmoService()
         {
             EditorApplication.hierarchyChanged += Refresh;
+            SceneView.duringSceneGui += RefreshChangedGeometry;
             Selection.selectionChanged += Refresh;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             AssemblyReloadEvents.beforeAssemblyReload += ClearAll;
@@ -226,7 +228,8 @@ namespace Orbiters.XRayGizmos.Editor
                     int id = target.ArmatureKey;
                     if (!Instances.TryGetValue(id, out var instance) ||
                         instance.MeshObject == null ||
-                        instance.Revision != settingsRevision)
+                        instance.Revision != settingsRevision ||
+                        !instance.Geometry.Matches(target.Renderer))
                     {
                         DestroyInstance(id);
                         CreateInstance(target);
@@ -243,6 +246,18 @@ namespace Orbiters.XRayGizmos.Editor
             {
                 isRefreshing = false;
                 NotifyChanged();
+            }
+        }
+
+        private static void RefreshChangedGeometry(SceneView sceneView)
+        {
+            if (!Enabled || isRefreshing || EditorApplication.timeSinceStartup < nextGeometryCheck) return;
+            nextGeometryCheck = EditorApplication.timeSinceStartup + 0.1;
+            foreach (var instance in Instances.Values)
+            {
+                if (instance.MeshObject != null && instance.Geometry.Matches(instance.Target.Renderer)) continue;
+                Refresh();
+                break;
             }
         }
 
@@ -514,12 +529,14 @@ namespace Orbiters.XRayGizmos.Editor
             public readonly XRayArmatureTarget Target;
             public readonly GameObject MeshObject;
             public readonly int Revision;
+            public readonly XRayArmatureGeometryState Geometry;
 
             public Instance(XRayArmatureTarget target, GameObject meshObject, int revision)
             {
                 Target = target;
                 MeshObject = meshObject;
                 Revision = revision;
+                Geometry = new XRayArmatureGeometryState(target.Renderer);
             }
         }
     }
