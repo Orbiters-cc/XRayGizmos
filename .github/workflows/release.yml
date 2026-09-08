@@ -15,7 +15,8 @@ jobs:
           if [ "${{ vars.PACKAGE_NAME }}" != "" ]; then
             echo "configPackage=true" >> $GITHUB_OUTPUT;
           else
-            echo "configPackage=false" >> $GITHUB_OUTPUT;
+            echo "::error::Set the PACKAGE_NAME repository variable before building a release.";
+            exit 1;
           fi
 
   build:
@@ -50,7 +51,7 @@ jobs:
         working-directory: "${{ env.packagePath }}"
         run: zip -q "${{ github.workspace }}/${{ env.zipFile }}" -@ < packageFiles
 
-      - name: Validate Package Zip Contents
+      - name: Validate Package Zip Import Contract
         working-directory: "${{ env.packagePath }}"
         run: python3 ci/validate-package-archive.py "${{ github.workspace }}/${{ env.zipFile }}"
 
@@ -67,4 +68,4 @@ jobs:
             ${{ env.zipFile }}
             ${{ env.packagePath }}/package.json
           tag_name: ${{ env.version }}
-
+          fail_on_unmatched_files: true
