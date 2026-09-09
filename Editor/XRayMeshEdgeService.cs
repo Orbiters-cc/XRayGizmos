@@ -169,8 +169,9 @@ namespace Orbiters.XRayGizmos.Editor
                         CreateInstance(renderer);
                     }
 
-                    if (Instances.ContainsKey(id))
+                    if (Instances.TryGetValue(id, out var current))
                     {
+                        SyncSkinning(current);
                         activeRenderers.Add(renderer);
                     }
                 }
@@ -820,6 +821,10 @@ namespace Orbiters.XRayGizmos.Editor
                     CreateInstance(renderer);
                     changed = true;
                 }
+                else
+                {
+                    changed |= SyncSkinning(instance);
+                }
             }
 
             if (changed)
@@ -827,6 +832,32 @@ namespace Orbiters.XRayGizmos.Editor
                 SceneView.RepaintAll();
                 NotifyChanged();
             }
+        }
+
+        private static bool SyncSkinning(Instance instance)
+        {
+            var source = instance.Renderer;
+            var overlay = instance.MeshObject.GetComponent<SkinnedMeshRenderer>();
+            if (source == null || overlay == null) return false;
+
+            bool changed = false;
+            var bones = source.bones;
+            if (!overlay.bones.SequenceEqual(bones))
+            {
+                overlay.bones = bones;
+                changed = true;
+            }
+            if (overlay.rootBone != source.rootBone)
+            {
+                overlay.rootBone = source.rootBone;
+                changed = true;
+            }
+            if (overlay.quality != source.quality)
+            {
+                overlay.quality = source.quality;
+                changed = true;
+            }
+            return changed;
         }
 
         private static float[] CaptureBlendShapeWeights(SkinnedMeshRenderer renderer)
