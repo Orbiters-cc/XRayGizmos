@@ -18,6 +18,26 @@ xray bone in the Scene view draws a white highlight, and clicking selects the
 matching bone transform in the hierarchy. Selected bones are also highlighted in
 white while the xray armature display is active.
 
+## Mirror posing
+
+Select an avatar or bone and click **Mirror** in the Scene-view toolbar or the
+window. Rotation and movement of one side are mirrored to its partner across the
+avatar root's local X plane. The window shows the active rig and selected partner.
+Mirror stays on that rig; toggle it off and on to switch rigs. It works independently
+of bone visibility and uses Toolkit's shared editor posing service.
+
+Humanoid mappings and left/right bone names are supported. Mesh bind poses account
+for differing local bone axes; pairs without bind data use their enable-time pose,
+reported in the status. Undo includes both sides. Center bones and scale edits are
+not mirrored. Both-side selections preserve explicit edits on each side. Mirror
+pauses during animation preview and turns off on play mode, reload or bone hierarchy
+changes. Bone and ancestor scales must be positive and uniform.
+
+Requires **Orbiters Toolkit 0.2.x**, declared in `vpmDependencies`. MCP for Unity
+is optional and is not needed for posing. When installing without VPM, install
+Toolkit alongside XRayGizmos. These changes require the Toolkit 0.2.0 release
+before distributing this XRayGizmos version.
+
 Weight paint mode overlays Blender-style weight colors on selected skinned meshes
 for the selected bone transforms. Selecting only a bone searches loaded scenes for
 skinned meshes with positive weight on that bone. Selecting an `Armature` object

@@ -20,6 +20,7 @@ namespace Orbiters.XRayGizmos.Editor
         public XRayGizmosSceneToolbarOverlay()
             : base(
                 XRayBonesToolbarToggle.Id,
+                XRayMirrorToolbarToggle.Id,
                 XRayWeightPaintToolbarToggle.Id,
                 XRayMeshEdgesToolbarToggle.Id,
                 XRayExtraToolbarToggle.Id)

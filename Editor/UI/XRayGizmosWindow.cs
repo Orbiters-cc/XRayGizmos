@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Orbiters.Toolkit.Editor.Posing;
 using Orbiters.XRayGizmos;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -24,6 +25,7 @@ namespace Orbiters.XRayGizmos.Editor
         private void OnEnable()
         {
             XRayGizmoService.Changed += Render;
+            MirrorPoseService.Changed += Render;
             XRayBonePickingService.Changed += Render;
             XRayWeightPaintService.Changed += Render;
             XRayMeshEdgeService.Changed += Render;
@@ -33,6 +35,7 @@ namespace Orbiters.XRayGizmos.Editor
         private void OnDisable()
         {
             XRayGizmoService.Changed -= Render;
+            MirrorPoseService.Changed -= Render;
             XRayBonePickingService.Changed -= Render;
             XRayWeightPaintService.Changed -= Render;
             XRayMeshEdgeService.Changed -= Render;
@@ -81,6 +84,15 @@ namespace Orbiters.XRayGizmos.Editor
             }
 
             content.Clear();
+
+            Question("Mirror posing");
+            var mirror = new Toggle("Mirror") { value = MirrorPoseService.Enabled };
+            mirror.AddToClassList("xray-field");
+            mirror.SetEnabled(!EditorApplication.isPlayingOrWillChangePlaymode);
+            XRayMirrorControls.BindImmediateToggle(mirror, XRayMirrorControls.SetEnabled);
+            content.Add(mirror);
+            Help(XRayMirrorControls.Status);
+            Help("Rotate or move one side; its partner follows across local X. Undo restores both. Scale and animation recording are not mirrored.");
 
             Question("Armature display");
 
