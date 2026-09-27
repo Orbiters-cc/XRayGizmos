@@ -20,18 +20,20 @@ white while the xray armature display is active.
 
 ## Mirror posing
 
-Select an avatar or bone and click **Mirror** in the Scene-view toolbar or the
-window. Rotation and movement of one side are mirrored to its partner across the
+Click **Mirror** in the Scene-view toolbar or the window. Mirror is a mode: it stays
+on while nothing can be mirrored and mirrors the rig of the avatar or bone you select
+next. Rotation and movement of one side are mirrored to its partner across the
 avatar root's local X plane. The window shows the active rig and selected partner.
-Mirror stays on that rig; toggle it off and on to switch rigs. It works independently
-of bone visibility and uses Toolkit's shared editor posing service.
+It works independently of bone visibility and uses Toolkit's shared editor posing
+service; XRay Gizmos supplies the rig when the selection is outside any humanoid.
 
 Humanoid mappings and left/right bone names are supported. Mesh bind poses account
 for differing local bone axes; pairs without bind data use their enable-time pose,
 reported in the status. Undo includes both sides. Center bones and scale edits are
 not mirrored. Both-side selections preserve explicit edits on each side. Mirror
-pauses during animation preview and turns off on play mode, reload or bone hierarchy
-changes. Bone and ancestor scales must be positive and uniform.
+pauses during animation preview and play mode, stays on through script reloads and
+binds again after bone hierarchy changes. Pairs under an unevenly scaled bone are
+skipped.
 
 Requires **Orbiters Toolkit 0.2.x**, declared in `vpmDependencies`. MCP for Unity
 is optional and is not needed for posing. When installing without VPM, install

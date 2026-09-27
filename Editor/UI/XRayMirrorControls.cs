@@ -9,13 +9,26 @@ using UnityEngine.UIElements;
 namespace Orbiters.XRayGizmos.Editor
 {
     // Presentation and target selection only; pose matching, math and Undo belong to Toolkit.
+    [InitializeOnLoad]
     internal static class XRayMirrorControls
     {
+        static XRayMirrorControls()
+        {
+            // Outside humanoids, mirror mode finds rigs with the same detection as the XRay armatures.
+            MirrorPoseService.ResolveOtherRig = (GameObject selected, out Transform root, out SkinnedMeshRenderer renderer) =>
+            {
+                bool found = XRayGizmoTargetFinder.TryResolveTarget(selected, out var target);
+                root = found ? target.Owner.transform : null;
+                renderer = found ? target.Renderer : null;
+                return found;
+            };
+        }
+
         public static string Status
         {
             get
             {
-                if (!MirrorPoseService.Enabled) return MirrorPoseService.LastStatus;
+                if (!MirrorPoseService.IsMirroring) return MirrorPoseService.LastStatus;
                 if (AnimationMode.InAnimationMode()) return "Mirror paused during animation preview/recording.";
                 var selected = Selection.activeTransform;
                 var partner = MirrorPoseService.GetPartner(selected);
@@ -27,13 +40,9 @@ namespace Orbiters.XRayGizmos.Editor
 
         public static void SetEnabled(bool enabled)
         {
-            if (!enabled) { MirrorPoseService.Disable(); return; }
-            if (XRayGizmoTargetFinder.TryResolveTarget(Selection.activeGameObject, out var target))
-                MirrorPoseService.Enable(target.Owner.transform, target.Renderer);
-            else
-                MirrorPoseService.Enable(null, null);
-            if (!MirrorPoseService.Enabled && SceneView.lastActiveSceneView != null)
-                SceneView.lastActiveSceneView.ShowNotification(new GUIContent(MirrorPoseService.LastStatus), 5);
+            // Mirror mode stays on without a rig to mirror; it binds to the next avatar or bone selected.
+            if (enabled) MirrorPoseService.Enable();
+            else MirrorPoseService.Disable();
         }
 
         public static void BindImmediateToggle(Toggle toggle, Action<bool> changed)

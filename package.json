@@ -1,14 +1,14 @@
 {
   "name": "orbiters.xraygizmos",
   "displayName": "XRay Gizmos",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "license": "LicenseRef-XRayGizmos-Proprietary",
   "unity": "2022.3",
   "description": "Unity editor xray armature and weight paint gizmos for selected objects or loaded scenes.",
   "type": "tool",
   "dependencies": {},
   "gitDependencies": {},
-  "vpmDependencies": { "orbiters.toolkit": ">=0.2.0 <0.3.0" },
+  "vpmDependencies": { "orbiters.toolkit": ">=0.2.5 <0.3.0" },
   "author": {
     "name": "blackorbit",
     "email": "blackorbit.eclaire@gmail.com",
