@@ -37,6 +37,11 @@ namespace Orbiters.XRayGizmos.Editor
                 return false;
             }
 
+            if (TryFindRigOf(selected.transform, out target))
+            {
+                return true;
+            }
+
             var current = selected.transform;
             while (current != null)
             {
@@ -93,6 +98,89 @@ namespace Orbiters.XRayGizmos.Editor
                     targetsByArmature[target.ArmatureKey] = target;
                 }
             }
+        }
+
+        // Relates the selection to the rigs of its whole hierarchy rather than to the first ancestor holding any skinned
+        // mesh: an accessory with its own armature placed on a bone (hair on the head) sits below the chest, so walking
+        // up from a hand would otherwise reach the accessory's renderer before the avatar's body. In order:
+        // 1. a bone belongs to the rig whose mesh is skinned to it (the one with the most bones);
+        // 2. an object that holds an armature (avatar root, accessory container) selects that rig;
+        // 3. an unskinned helper or end bone (holding no skinned mesh) belongs to the nearest armature containing it.
+        // Anything else (mesh objects, props) keeps the walk-up.
+        private static bool TryFindRigOf(Transform selected, out XRayArmatureTarget target)
+        {
+            target = default;
+            bool hasUser = false, hasOwned = false, hasContainer = false;
+            XRayArmatureTarget user = default, owned = default, container = default;
+            int containerDepth = -1;
+
+            foreach (var renderer in selected.root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (!TryBuildTarget(renderer, out var candidate))
+                {
+                    continue;
+                }
+
+                if (System.Array.IndexOf(renderer.bones, selected) >= 0)
+                {
+                    if (!hasUser || candidate.Score > user.Score)
+                    {
+                        user = candidate;
+                        hasUser = true;
+                    }
+                }
+
+                if (candidate.Owner == selected.gameObject && (!hasOwned || candidate.Score > owned.Score))
+                {
+                    owned = candidate;
+                    hasOwned = true;
+                }
+
+                if (selected.IsChildOf(candidate.ArmatureRoot))
+                {
+                    int depth = Depth(candidate.ArmatureRoot);
+                    if (depth > containerDepth || (depth == containerDepth && candidate.Score > container.Score))
+                    {
+                        container = candidate;
+                        containerDepth = depth;
+                        hasContainer = true;
+                    }
+                }
+            }
+
+            // A mesh object inside an armature (an accessory's mesh placed on a bone) is not a helper bone: the walk-up
+            // finds its own rig.
+            if (hasContainer && !hasUser && !hasOwned && HoldsSkinnedMesh(selected))
+            {
+                hasContainer = false;
+            }
+
+            target = hasUser ? user : hasOwned ? owned : container;
+            return hasUser || hasOwned || hasContainer;
+        }
+
+        private static bool HoldsSkinnedMesh(Transform transform)
+        {
+            foreach (var renderer in transform.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (XRayArmatureMeshGenerator.IsUsableRenderer(renderer))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static int Depth(Transform transform)
+        {
+            int depth = 0;
+            for (var current = transform; current != null; current = current.parent)
+            {
+                depth++;
+            }
+
+            return depth;
         }
 
         private static bool TryFindBestTarget(GameObject root, out XRayArmatureTarget target)
