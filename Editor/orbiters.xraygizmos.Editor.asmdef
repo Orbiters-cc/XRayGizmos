@@ -3,6 +3,7 @@
   "rootNamespace": "Orbiters.XRayGizmos.Editor",
   "references": [
     "orbiters.xraygizmos",
+    "Orbiters.Toolkit",
     "Orbiters.Toolkit.Editor"
   ],
   "includePlatforms": [
