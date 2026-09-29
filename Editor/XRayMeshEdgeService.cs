@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Orbiters.XRayGizmos;
+using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -391,12 +392,24 @@ namespace Orbiters.XRayGizmos.Editor
             bool hasNormals = sourceNormals != null && sourceNormals.Length == sourceMesh.vertexCount;
             ApplyActiveBlendShapes(renderer, sourceMesh, vertices, hasNormals ? sourceNormals : null);
 
-            var sourceWeights = sourceMesh.boneWeights;
-            bool hasWeights = sourceWeights != null && sourceWeights.Length == sourceMesh.vertexCount;
+            // Every influence, not the legacy four-slot boneWeights: the overlay must deform exactly like its source.
+            var sourceBonesPerVertex = sourceMesh.GetBonesPerVertex();
+            var sourceWeights = sourceMesh.GetAllBoneWeights();
+            bool hasWeights = sourceBonesPerVertex.Length == sourceMesh.vertexCount && sourceWeights.Length > 0;
+            int[] sourceWeightStart = null;
+            if (hasWeights)
+            {
+                sourceWeightStart = new int[sourceBonesPerVertex.Length];
+                for (int i = 1; i < sourceWeightStart.Length; i++)
+                {
+                    sourceWeightStart[i] = sourceWeightStart[i - 1] + sourceBonesPerVertex[i - 1];
+                }
+            }
 
             var edgeVertices = new Vector3[triangleIndexCount];
             var edgeNormals = hasNormals ? new Vector3[triangleIndexCount] : null;
-            var edgeWeights = hasWeights ? new BoneWeight[triangleIndexCount] : null;
+            var edgeBonesPerVertex = hasWeights ? new byte[triangleIndexCount] : null;
+            var edgeWeights = hasWeights ? new List<BoneWeight1>(triangleIndexCount * 4) : null;
             var barycentric = new Vector2[triangleIndexCount];
             var indices = new int[triangleIndexCount];
             int writeIndex = 0;
@@ -412,7 +425,12 @@ namespace Orbiters.XRayGizmos.Editor
 
                 if (edgeWeights != null)
                 {
-                    edgeWeights[targetIndex] = sourceWeights[sourceIndex];
+                    byte count = sourceBonesPerVertex[sourceIndex];
+                    edgeBonesPerVertex[targetIndex] = count;
+                    for (int w = 0; w < count; w++)
+                    {
+                        edgeWeights.Add(sourceWeights[sourceWeightStart[sourceIndex] + w]);
+                    }
                 }
 
                 barycentric[targetIndex] = barycentricCoordinate;
@@ -456,9 +474,9 @@ namespace Orbiters.XRayGizmos.Editor
                     Array.Resize(ref edgeNormals, writeIndex);
                 }
 
-                if (edgeWeights != null)
+                if (edgeBonesPerVertex != null)
                 {
-                    Array.Resize(ref edgeWeights, writeIndex);
+                    Array.Resize(ref edgeBonesPerVertex, writeIndex);
                 }
             }
 
@@ -480,7 +498,11 @@ namespace Orbiters.XRayGizmos.Editor
 
             if (edgeWeights != null)
             {
-                mesh.boneWeights = edgeWeights;
+                using (var bonesPerVertex = new NativeArray<byte>(edgeBonesPerVertex, Allocator.Temp))
+                using (var weights = new NativeArray<BoneWeight1>(edgeWeights.ToArray(), Allocator.Temp))
+                {
+                    mesh.SetBoneWeights(bonesPerVertex, weights);
+                }
             }
 
             mesh.bindposes = sourceMesh.bindposes;
@@ -513,8 +535,22 @@ namespace Orbiters.XRayGizmos.Editor
             for (int shape = 0; shape < sourceMesh.blendShapeCount; shape++)
             {
                 float weight = renderer.GetBlendShapeWeight(shape);
+                int frameCount = sourceMesh.GetBlendShapeFrameCount(shape);
+                if (frameCount == 0) continue;
+                if (PlayerSettings.legacyClampBlendShapeWeights)
+                {
+                    float lastWeight = sourceMesh.GetBlendShapeFrameWeight(shape, frameCount - 1);
+                    if (frameCount == 1 && lastWeight < 0f) continue;
+                    if (frameCount == 1 && lastWeight == 0f)
+                        // Native clamped skinning treats a lone zero-weight frame as a step at positive weights.
+                        weight = weight > 0f ? 100f : 0f;
+                    else
+                        // Native skinning applies the lower bound first, then the final frame's upper bound, even
+                        // when all frames of a multi-frame shape are negative. Mathf.Clamp differs in that case.
+                        weight = Mathf.Min(Mathf.Max(weight, 0f), lastWeight);
+                }
                 // Zero can interpolate nonzero deltas when multiple frames start below zero.
-                if (weight == 0f && (sourceMesh.GetBlendShapeFrameCount(shape) <= 1 ||
+                if (weight == 0f && (frameCount <= 1 ||
                     sourceMesh.GetBlendShapeFrameWeight(shape, 0) >= 0f))
                 {
                     continue;
@@ -884,7 +920,8 @@ namespace Orbiters.XRayGizmos.Editor
             var mesh = renderer != null ? renderer.sharedMesh : null;
             int blendShapeCount = mesh != null ? mesh.blendShapeCount : 0;
             if (instance.BlendShapeWeights == null ||
-                instance.BlendShapeWeights.Length != blendShapeCount)
+                instance.BlendShapeWeights.Length != blendShapeCount ||
+                (blendShapeCount > 0 && instance.ClampBlendShapeWeights != PlayerSettings.legacyClampBlendShapeWeights))
             {
                 return true;
             }
@@ -991,6 +1028,7 @@ namespace Orbiters.XRayGizmos.Editor
             public readonly GameObject MeshObject;
             public readonly int Revision;
             public readonly float[] BlendShapeWeights;
+            public readonly bool ClampBlendShapeWeights;
 
             public Instance(
                 SkinnedMeshRenderer renderer,
@@ -1004,6 +1042,7 @@ namespace Orbiters.XRayGizmos.Editor
                 MeshObject = meshObject;
                 Revision = revision;
                 BlendShapeWeights = blendShapeWeights;
+                ClampBlendShapeWeights = PlayerSettings.legacyClampBlendShapeWeights;
             }
         }
 

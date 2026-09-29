@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -30,7 +31,7 @@ namespace Orbiters.XRayGizmos.Editor.Tests
                 renderer.sharedMesh = mesh;
                 var evaluate = typeof(XRayMeshEdgeService).GetMethod("ApplyActiveBlendShapes", BindingFlags.Static | BindingFlags.NonPublic);
                 var configurations = new[] { new[] { 50f, 100f }, new[] { -100f, 100f }, new[] { -100f, -50f },
-                    new[] { 25f, 50f, 100f }, new[] { 50f }, new[] { -50f } };
+                    new[] { 25f, 50f, 100f }, new[] { 50f }, new[] { -50f }, new[] { 0f } };
                 foreach (var frames in configurations)
                 {
                     mesh.ClearBlendShapes();
@@ -45,7 +46,7 @@ namespace Orbiters.XRayGizmos.Editor.Tests
                         var expected = baked.vertices;
                         for (int vertex = 0; vertex < actual.Length; vertex++)
                             if ((actual[vertex] - expected[vertex]).sqrMagnitude > 0.00000001f)
-                                throw new InvalidOperationException($"Frames {string.Join(",", frames)}, weight {weight}: XRay {actual[vertex]} != Unity {expected[vertex]}");
+                                throw new InvalidOperationException($"Clamp={PlayerSettings.legacyClampBlendShapeWeights}, frames {string.Join(",", frames)}, weight {weight}: XRay {actual[vertex]} != Unity {expected[vertex]}");
                     }
                 }
             }
