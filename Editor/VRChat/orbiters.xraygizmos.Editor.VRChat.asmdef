@@ -1,0 +1,24 @@
+{
+  "name": "orbiters.xraygizmos.Editor.VRChat",
+  "rootNamespace": "Orbiters.XRayGizmos.Editor.VRChat",
+  "references": [
+    "orbiters.xraygizmos.Editor",
+    "Orbiters.Toolkit.Editor.VRChat",
+    "VRC.SDK3A",
+    "VRC.SDKBase"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "XRAY_VRCHAT_AVATARS"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.0",
+      "define": "XRAY_VRCHAT_AVATARS"
+    }
+  ]
+}

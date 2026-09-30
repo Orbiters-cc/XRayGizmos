@@ -93,6 +93,7 @@ namespace Orbiters.XRayGizmos.Editor
             content.Add(mirror);
             Help(XRayMirrorControls.Status);
             Help("Rotate or move one side; its partner follows across local X. Undo restores both. Scale and animation recording are not mirrored.");
+            foreach (var control in XRayPosingExtensions.Build()) content.Add(control);
 
             Question("Armature display");
 

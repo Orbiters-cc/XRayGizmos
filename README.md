@@ -35,6 +35,14 @@ pauses during animation preview and play mode, stays on through script reloads a
 binds again after bone hierarchy changes. Pairs under an unevenly scaled bone are
 skipped.
 
+## Clothing preview
+
+With the VRChat avatar SDK in the project, **Clothing** (Scene-view toolbar and window) does
+what My Avatar's Posing › Clothing does: clothing and accessories follow the pose of the selected
+avatar (or the scene's only avatar) as they will once built, through VRCFury Armature Links,
+My Avatar attachments and matching bone names, and go back where they were when it is switched
+off. It lives in an optional assembly that compiles only with the SDK; without it nothing shows.
+
 Requires **Orbiters Toolkit 0.2.x**, declared in `vpmDependencies`. MCP for Unity
 is optional and is not needed for posing. When installing without VPM, install
 Toolkit alongside XRayGizmos. These changes require the Toolkit 0.2.0 release
@@ -57,7 +65,7 @@ to the snapshot, and nearby labels are separated to reduce overlap.
 
 ## Notes
 
-- The package has no dependency on MCB or the VRChat SDK.
+- The package has no dependency on MCB. The VRChat SDK is optional (Clothing preview only).
 - Armature detection is based on usable `SkinnedMeshRenderer` bone arrays.
 - Multiple meshes pointing to the same resolved armature are displayed once.
 - Armature geometry is generated from the selected renderer's bone array and

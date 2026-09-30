@@ -21,6 +21,7 @@ namespace Orbiters.XRayGizmos.Editor
             : base(
                 XRayBonesToolbarToggle.Id,
                 XRayMirrorToolbarToggle.Id,
+                XRayPosingExtensions.ClothingToolbarId,
                 XRayWeightPaintToolbarToggle.Id,
                 XRayMeshEdgesToolbarToggle.Id,
                 XRayExtraToolbarToggle.Id)
