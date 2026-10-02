@@ -16,7 +16,8 @@ namespace Orbiters.XRayGizmos.Editor
         private const float SelectedLineWidth = 7f;
         private const float BoneCapScale = 0.018f;
 
-        private static XRayBoneSegment hoveredSegment;
+        private static readonly Dictionary<int, XRayBoneSegment> hoveredSegments = new Dictionary<int, XRayBoneSegment>();
+        private static readonly int PickingControlHint = "Orbiters.XRayGizmos.BonePicking".GetHashCode();
         private static double lastRepaintTime;
 
         public static event Action Changed;
@@ -35,7 +36,7 @@ namespace Orbiters.XRayGizmos.Editor
             private set => EditorPrefs.SetBool(EnabledKey, value);
         }
 
-        public static Transform HoveredBone => hoveredSegment.IsValid ? hoveredSegment.Bone : null;
+        public static Transform HoveredBone => GetHover(SceneView.lastActiveSceneView).Bone;
 
         public static void SetEnabled(bool enabled)
         {
@@ -56,42 +57,42 @@ namespace Orbiters.XRayGizmos.Editor
 
         private static void OnSceneGUI(SceneView sceneView)
         {
-            if (sceneView != null)
+            var evt = Event.current;
+            if (evt == null || sceneView == null)
             {
-                sceneView.wantsMouseMove = Enabled;
+                return;
             }
 
+            // Allocate on every event, including when disabled, to keep Unity's control sequence stable.
+            int controlId = GUIUtility.GetControlID(PickingControlHint, FocusType.Passive);
             if (!XRayGizmoService.Enabled)
             {
-                if (hoveredSegment.IsValid)
+                SetHover(sceneView, default);
+                return;
+            }
+
+            bool canHover = Enabled && !evt.alt && !Tools.viewToolActive && Tools.current != Tool.View && GUIUtility.hotControl == 0;
+            if (evt.type == EventType.Layout || evt.type == EventType.MouseMove)
+            {
+                float distance = PickRadiusPixels;
+                var next = canHover ? FindHoveredSegment(sceneView.camera, evt.mousePosition, out distance) : default;
+                SetHover(sceneView, next);
+                if (next.IsValid)
                 {
-                    ClearHover();
+                    // Unity's normal handles compete in a five-point pick range. Preserve our larger bone hit area
+                    // without registering a default control that could swallow empty-space clicks.
+                    HandleUtility.AddControl(controlId, distance * (5f / PickRadiusPixels));
                 }
-                return;
+            }
+            else if (!canHover || evt.type == EventType.MouseLeaveWindow)
+            {
+                SetHover(sceneView, default);
             }
 
-            var evt = Event.current;
-            if (evt == null)
+            var hovered = GetHover(sceneView);
+            if (Enabled && hovered.IsValid && CanPickBone(evt, controlId))
             {
-                return;
-            }
-
-            if (Enabled)
-            {
-                UpdateHover(evt.mousePosition);
-            }
-            else if (hoveredSegment.IsValid)
-            {
-                ClearHover();
-            }
-
-            if (evt.type == EventType.MouseDown &&
-                evt.button == 0 &&
-                !evt.alt &&
-                Enabled &&
-                hoveredSegment.IsValid)
-            {
-                SelectHoveredBone();
+                SelectBone(hovered.Bone, evt.shift, evt.control || evt.command);
                 evt.Use();
                 return;
             }
@@ -99,30 +100,42 @@ namespace Orbiters.XRayGizmos.Editor
             if (evt.type == EventType.Repaint)
             {
                 DrawSelectedHighlights();
-                if (Enabled && hoveredSegment.IsValid)
+                if (canHover && hovered.IsValid && HandleUtility.nearestControl == controlId)
                 {
-                    DrawSegmentHighlight(hoveredSegment, HoverLineWidth);
+                    DrawSegmentHighlight(hovered, HoverLineWidth);
                 }
             }
         }
 
-        private static void UpdateHover(Vector2 mousePosition)
+        internal static bool CanPickBone(Event evt, int controlId)
         {
-            var next = FindHoveredSegment(mousePosition);
-            if (SameSegment(hoveredSegment, next))
+            return evt.type == EventType.MouseDown && evt.button == 0 && !evt.alt &&
+                !Tools.viewToolActive && Tools.current != Tool.View && GUIUtility.hotControl == 0 &&
+                HandleUtility.nearestControl == controlId;
+        }
+
+        private static XRayBoneSegment GetHover(SceneView view)
+        {
+            return view != null && hoveredSegments.TryGetValue(view.GetInstanceID(), out var segment) ? segment : default;
+        }
+
+        private static void SetHover(SceneView view, XRayBoneSegment next)
+        {
+            if (SameSegment(GetHover(view), next))
             {
                 return;
             }
 
-            hoveredSegment = next;
+            if (next.IsValid) hoveredSegments[view.GetInstanceID()] = next;
+            else hoveredSegments.Remove(view.GetInstanceID());
             RepaintSceneViewsThrottled();
             Changed?.Invoke();
         }
 
-        private static XRayBoneSegment FindHoveredSegment(Vector2 mousePosition)
+        private static XRayBoneSegment FindHoveredSegment(Camera camera, Vector2 mousePosition, out float bestDistance)
         {
             XRayBoneSegment best = default;
-            float bestDistance = PickRadiusPixels;
+            bestDistance = PickRadiusPixels;
 
             foreach (var segment in XRayGizmoService.ActiveBoneSegments)
             {
@@ -131,7 +144,7 @@ namespace Orbiters.XRayGizmos.Editor
                     continue;
                 }
 
-                if (!TryGetSegmentGuiPoints(segment, out var a, out var b))
+                if (!TryProjectSegment(camera, segment.Bone.position, segment.EndPosition, out var a, out var b))
                 {
                     continue;
                 }
@@ -148,36 +161,45 @@ namespace Orbiters.XRayGizmos.Editor
             return best;
         }
 
-        private static bool TryGetSegmentGuiPoints(XRayBoneSegment segment, out Vector2 a, out Vector2 b)
+        internal static bool TryProjectSegment(Camera camera, Vector3 head, Vector3 tail, out Vector2 a, out Vector2 b)
         {
             a = default;
             b = default;
 
-            var camera = Camera.current;
-            if (camera == null)
+            if (camera == null || !IsFinite(head) || !IsFinite(tail))
             {
                 return false;
             }
 
-            Vector3 head = segment.Bone.position;
-            Vector3 tail = segment.EndPosition;
             if ((tail - head).sqrMagnitude < 0.000001f)
             {
                 return false;
             }
 
-            if (camera.WorldToViewportPoint(head).z <= 0f &&
-                camera.WorldToViewportPoint(tail).z <= 0f)
+            float headDepth = Vector3.Dot(head - camera.transform.position, camera.transform.forward);
+            float tailDepth = Vector3.Dot(tail - camera.transform.position, camera.transform.forward);
+            float near = Mathf.Max(0.0001f, camera.nearClipPlane);
+            if (headDepth < near && tailDepth < near)
             {
                 return false;
             }
 
-            a = HandleUtility.WorldToGUIPoint(head);
-            b = HandleUtility.WorldToGUIPoint(tail);
-            return true;
+            // Project only the visible part. An endpoint behind the camera otherwise creates an invisible line
+            // across the viewport, which can take clicks far away from the rendered bone.
+            if (headDepth < near) head = Vector3.Lerp(head, tail, (near - headDepth) / (tailDepth - headDepth));
+            else if (tailDepth < near) tail = Vector3.Lerp(head, tail, (near - headDepth) / (tailDepth - headDepth));
+            using (new Handles.DrawingScope(Matrix4x4.identity))
+            {
+                a = HandleUtility.WorldToGUIPointWithDepth(camera, head);
+                b = HandleUtility.WorldToGUIPointWithDepth(camera, tail);
+            }
+            return IsFinite(a) && IsFinite(b);
         }
 
-        private static float DistanceToSegment(Vector2 point, Vector2 a, Vector2 b)
+        private static bool IsFinite(Vector3 value) => !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
+            !float.IsNaN(value.y) && !float.IsInfinity(value.y) && !float.IsNaN(value.z) && !float.IsInfinity(value.z);
+
+        internal static float DistanceToSegment(Vector2 point, Vector2 a, Vector2 b)
         {
             Vector2 ab = b - a;
             float lengthSq = ab.sqrMagnitude;
@@ -241,15 +263,14 @@ namespace Orbiters.XRayGizmos.Editor
             }
         }
 
-        private static void SelectHoveredBone()
+        private static void SelectBone(Transform bone, bool additive, bool toggle)
         {
-            if (!hoveredSegment.IsValid)
-            {
-                return;
-            }
-
-            Selection.activeTransform = hoveredSegment.Bone;
-            EditorGUIUtility.PingObject(hoveredSegment.Bone);
+            var selected = new List<UnityEngine.Object>(Selection.objects);
+            var item = bone.gameObject;
+            if (toggle && selected.Contains(item)) selected.Remove(item);
+            else if (additive || toggle) { if (!selected.Contains(item)) selected.Add(item); }
+            else { selected.Clear(); selected.Add(item); }
+            Selection.objects = selected.ToArray();
             SceneView.RepaintAll();
         }
 
@@ -261,7 +282,7 @@ namespace Orbiters.XRayGizmos.Editor
 
         private static void ClearHover()
         {
-            hoveredSegment = default;
+            hoveredSegments.Clear();
             RepaintSceneViews();
             Changed?.Invoke();
         }

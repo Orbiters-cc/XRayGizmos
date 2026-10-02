@@ -18,6 +18,11 @@ xray bone in the Scene view draws a white highlight, and clicking selects the
 matching bone transform in the hierarchy. Selected bones are also highlighted in
 white while the xray armature display is active.
 
+Bone picking participates in Unity's normal handle arbitration and yields to active
+drags, the View tool and camera navigation. Only the segment in front of the camera's
+near plane is pickable. Shift-click adds a bone; Ctrl/Cmd-click toggles it. Hover is
+kept separately for each Scene view, and empty-space clicks remain available to Unity.
+
 ## Mirror posing
 
 Click **Mirror** in the Scene-view toolbar or the window. Mirror is a mode: it stays
@@ -43,10 +48,9 @@ avatar (or the scene's only avatar) as they will once built, through VRCFury Arm
 My Avatar attachments and matching bone names, and go back where they were when it is switched
 off. It lives in an optional assembly that compiles only with the SDK; without it nothing shows.
 
-Requires **Orbiters Toolkit 0.2.x**, declared in `vpmDependencies`. MCP for Unity
+Requires **Orbiters Toolkit 0.3.7 or newer within 0.3.x**, declared in `vpmDependencies`. MCP for Unity
 is optional and is not needed for posing. When installing without VPM, install
-Toolkit alongside XRayGizmos. These changes require the Toolkit 0.2.0 release
-before distributing this XRayGizmos version.
+Toolkit alongside XRayGizmos.
 
 Weight paint mode overlays Blender-style weight colors on selected skinned meshes
 for the selected bone transforms. Selecting only a bone searches loaded scenes for
