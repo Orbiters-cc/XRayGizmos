@@ -88,7 +88,7 @@ namespace Orbiters.XRayGizmos.Editor
             Question("Mirror posing");
             var mirror = new Toggle("Mirror") { value = MirrorPoseService.Enabled };
             mirror.AddToClassList("xray-field");
-            mirror.SetEnabled(!EditorApplication.isPlayingOrWillChangePlaymode);
+            mirror.SetEnabled(!EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isPlaying);
             XRayMirrorControls.BindImmediateToggle(mirror, XRayMirrorControls.SetEnabled);
             content.Add(mirror);
             Help(XRayMirrorControls.Status);

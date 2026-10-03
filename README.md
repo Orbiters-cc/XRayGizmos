@@ -1,5 +1,10 @@
 # XRay Gizmos
 
+## 0.2.7 — 2026-10-03
+
+- Enable symmetry controls during Play Mode using Toolkit mirror overrides that survive the animation update.
+- Keep editor posing changes separate from the uploaded avatar runtime.
+
 XRay Gizmos is a Unity editor tool for showing armatures as xray overlay
 meshes in the Scene view.
 

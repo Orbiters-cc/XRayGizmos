@@ -133,7 +133,7 @@ namespace Orbiters.XRayGizmos.Editor
         private void Sync()
         {
             SetValueWithoutNotify(MirrorPoseService.Enabled);
-            SetEnabled(!EditorApplication.isPlayingOrWillChangePlaymode);
+            SetEnabled(!EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isPlaying);
             tooltip = XRayMirrorControls.Status + "\nMirror rotation and movement across the avatar's local X axis. Click to toggle.";
         }
 
