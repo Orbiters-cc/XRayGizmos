@@ -3,6 +3,7 @@
   "rootNamespace": "Orbiters.XRayGizmos.Editor.VRChat",
   "references": [
     "orbiters.xraygizmos.Editor",
+    "Orbiters.Toolkit.Editor",
     "Orbiters.Toolkit.Editor.VRChat",
     "VRC.SDK3A",
     "VRC.SDKBase"

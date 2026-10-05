@@ -1,5 +1,10 @@
 # XRay Gizmos
 
+## 0.2.8 — 2026-10-06
+
+- Avatar budget, a see-through panel over the Scene view: synced parameters as built, with VRCFury's parameter compression when it applies, and the bones, PhysBones and contacts that set the PC performance rank, each with a custom base's share. It replaces the budget cards of MCB and My Avatar.
+- Requires Orbiters Toolkit 0.3.13.
+
 ## 0.2.7 — 2026-10-03
 
 - Enable symmetry controls during Play Mode using Toolkit mirror overrides that survive the animation update.
@@ -71,6 +76,23 @@ meshes with configurable color and opacity.
 ReFit debug labels are drawn automatically while ReFit debug mode is enabled.
 Each ReFit debug snapshot gets a readable Scene view label with a connector line
 to the snapshot, and nearby labels are separated to reduce overlap.
+
+## Avatar budget
+
+With the VRChat avatar SDK in the project, the **Avatar budget** overlay (Scene view, bottom right; toggle it from the
+Overlays menu) shows where the selected avatar, or the scene's only active avatar, stands against VRChat's limits,
+estimated without building:
+
+- **Parameters**: the bits of synced parameter memory the avatar uses once built, out of 256: its expression
+  parameters and what VRCFury toggles, sliders and full controllers add. When the avatar goes over 256 and VRCFury's
+  parameter compression is on (its global setting), the bar shows the bits left after compression, how many
+  parameters VRCFury compresses and how long a full sync of them takes. Only parameters a radial, toggle or puppet
+  menu control drives can be compressed, as in VRCFury.
+- **Bones**, **PhysBones** and **Contacts**: the counts that most often set an avatar's PC performance rank, with
+  the rank each reaches. Ticks mark the Excellent, Good, Medium and Poor limits from the VRChat SDK.
+
+On a custom base (MCB), each bar shows the custom base's share apart from the avatar's, counted as built: PhysBones
+its build adds and bones it removes are included. The panel recounts shortly after the hierarchy or selection changes.
 
 ## Notes
 
