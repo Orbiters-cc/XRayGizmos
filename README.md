@@ -3,6 +3,7 @@
 ## 0.2.8 — 2026-10-06
 
 - Avatar budget, a see-through panel over the Scene view: synced parameters as built, with VRCFury's parameter compression when it applies, and the bones, PhysBones and contacts that set the PC performance rank, each with a custom base's share. It replaces the budget cards of MCB and My Avatar.
+- Avatar build copies leave out the Scene gizmos before avatar tools run: VRCFury sized every renderer's bounds to include the armature gizmo.
 - Requires Orbiters Toolkit 0.3.13.
 
 ## 0.2.7 — 2026-10-03
