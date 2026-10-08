@@ -1,5 +1,10 @@
 # XRay Gizmos
 
+## 0.2.9 — 2026-10-08
+
+- Avatar budget: the parameters bar shows the face tracking template's share in light purple, as My Avatar's face tracking settings do, apart from the avatar's own and its custom base's.
+- Requires Orbiters Toolkit 0.3.18.
+
 ## 0.2.8 — 2026-10-06
 
 - Avatar budget, a see-through panel over the Scene view: synced parameters as built, with VRCFury's parameter compression when it applies, and the bones, PhysBones and contacts that set the PC performance rank, each with a custom base's share. It replaces the budget cards of MCB and My Avatar.

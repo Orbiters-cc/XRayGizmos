@@ -1,7 +1,7 @@
 {
   "name": "orbiters.xraygizmos",
   "displayName": "XRay Gizmos",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "license": "LicenseRef-XRayGizmos-Proprietary",
   "unity": "2022.3",
   "description": "Unity editor xray armature and weight paint gizmos for selected objects or loaded scenes, and an avatar budget over the Scene view.",
@@ -9,7 +9,7 @@
   "dependencies": {},
   "gitDependencies": {},
   "vpmDependencies": {
-    "orbiters.toolkit": ">=0.3.13 <0.4.0"
+    "orbiters.toolkit": ">=0.3.18 <0.4.0"
   },
   "author": {
     "name": "blackorbit",

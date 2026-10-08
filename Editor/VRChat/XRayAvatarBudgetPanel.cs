@@ -30,7 +30,8 @@ namespace Orbiters.XRayGizmos.Editor.VRChat
     internal sealed class XRayAvatarBudgetPanel : VisualElement
     {
         private const string StyleSheetPath = "Packages/orbiters.xraygizmos/Editor/VRChat/avatar-budget.uss";
-        private static readonly Color AvatarColor = new Color32(0xd8, 0xd8, 0xd8, 0xff), CustomBaseColor = new Color32(0x00, 0xda, 0x6d, 0xff);
+        private static readonly Color AvatarColor = new Color32(0xd8, 0xd8, 0xd8, 0xff), CustomBaseColor = new Color32(0x00, 0xda, 0x6d, 0xff),
+            FaceTrackingColor = new Color32(0x8a, 0x7d, 0xff, 0xff);
 
         private readonly Func<VRCAvatarDescriptor> avatar;
         private readonly Label avatarName, empty, compression;
@@ -137,10 +138,12 @@ namespace Orbiters.XRayGizmos.Editor.VRChat
         {
             legend.Clear(); metrics.Clear();
             bool custom = !string.IsNullOrEmpty(budget.CustomBase);
-            // The colors only need a key when the bars split the avatar from a custom base.
-            legend.style.display = custom ? DisplayStyle.Flex : DisplayStyle.None;
+            // The colors only need a key when the bars split the avatar from a custom base or its face tracking.
+            bool face = budget.Parameters.FaceTrackingBits > 0;
+            legend.style.display = custom || face ? DisplayStyle.Flex : DisplayStyle.None;
             legend.Add(Key("Avatar", AvatarColor, "The avatar's own parameters, bones, PhysBones and contacts."));
             if (custom) legend.Add(Key("Custom base", CustomBaseColor, budget.CustomBase + ": what it adds to the avatar, as built."));
+            if (face) legend.Add(Key("Face tracking", FaceTrackingColor, "The synced parameters of the face tracking template, with the features My Avatar leaves out removed."));
 
             var parameters = budget.Parameters;
             int max = ParameterBudget.MaxSyncedBits;
@@ -148,7 +151,7 @@ namespace Orbiters.XRayGizmos.Editor.VRChat
                 parameters.OverBudget ? (parameters.BuiltBits - max) + " over" : parameters.Free + " free",
                 parameters.OverBudget ? "very-poor" : "good",
                 parameters.OverBudget ? "VRCFury cannot fit these parameters in 256 bits: the build will fail." : "Synced parameter memory left once built.",
-                new BudgetCount(parameters.AvatarBits, parameters.CustomBaseBits), Mathf.Max(max, parameters.TotalBeforeCompression),
+                new BudgetCount(parameters.AvatarBits, parameters.CustomBaseBits, parameters.FaceTrackingBits), Mathf.Max(max, parameters.TotalBeforeCompression),
                 parameters.TotalBeforeCompression > max ? new[] { max } : Array.Empty<int>(), true,
                 parameters.Compresses
                     ? $"Compressed by VRCFury at build: {parameters.TotalBeforeCompression} → {parameters.CompressedBits} bits, {parameters.CompressedParameters} parameters in a {parameters.SyncSeconds:0.#} s sync."
@@ -190,9 +193,10 @@ namespace Orbiters.XRayGizmos.Editor.VRChat
             chip.AddToClassList("orb-avatar-budget__chip--" + chipClass); head.Add(chip);
 
             var track = new VisualElement(); track.AddToClassList("orb-avatar-budget__track"); metric.Add(track);
-            track.tooltip = "Avatar " + split.Avatar + " · Custom base " + split.CustomBase;
+            track.tooltip = "Avatar " + split.Avatar + " · Custom base " + split.CustomBase + (split.FaceTracking > 0 ? " · Face tracking " + split.FaceTracking : string.Empty);
             AddSegment(track, split.Avatar, scale, AvatarColor);
             AddSegment(track, split.CustomBase, scale, CustomBaseColor);
+            AddSegment(track, split.FaceTracking, scale, FaceTrackingColor);
             foreach (int limit in ticks)
             {
                 if (limit <= 0 || limit >= scale) continue;
