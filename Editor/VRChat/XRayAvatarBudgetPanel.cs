@@ -54,12 +54,14 @@ namespace Orbiters.XRayGizmos.Editor.VRChat
             compression.tooltip = "Change compression behavior from VRCFury's global settings.";
             Add(compression);
 
-            // Toggles, controllers and bones change as the hierarchy is edited: recount shortly after, not on every change.
-            // The first count waits too: Unity restores overlays early in a reload, before the VRChat SDK is ready.
+            // Toggles, controllers and bones change as the hierarchy is edited, and settings as components and assets are (e.g.
+            // My Avatar leaving its default menu out of the upload): recount shortly after, not on every change. The first
+            // count waits too: Unity restores overlays early in a reload, before the VRChat SDK is ready.
             RegisterCallback<AttachToPanelEvent>(_ =>
             {
                 Frame();
                 EditorApplication.hierarchyChanged += ScheduleRefresh;
+                ObjectChangeEvents.changesPublished += OnObjectsChanged;
                 Undo.undoRedoPerformed += ScheduleRefresh;
                 Selection.selectionChanged += ScheduleRefresh;
                 CustomBases.Changed += OnCustomBaseChanged;
@@ -68,6 +70,7 @@ namespace Orbiters.XRayGizmos.Editor.VRChat
             RegisterCallback<DetachFromPanelEvent>(_ =>
             {
                 EditorApplication.hierarchyChanged -= ScheduleRefresh;
+                ObjectChangeEvents.changesPublished -= OnObjectsChanged;
                 Undo.undoRedoPerformed -= ScheduleRefresh;
                 Selection.selectionChanged -= ScheduleRefresh;
                 CustomBases.Changed -= OnCustomBaseChanged;
@@ -87,6 +90,8 @@ namespace Orbiters.XRayGizmos.Editor.VRChat
         }
 
         private void OnCustomBaseChanged(Transform _) => ScheduleRefresh();
+
+        private void OnObjectsChanged(ref ObjectChangeEventStream _) => ScheduleRefresh();
 
         private void ScheduleRefresh() => ScheduleRefresh(400);
 

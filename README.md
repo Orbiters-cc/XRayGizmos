@@ -1,5 +1,10 @@
 # XRay Gizmos
 
+## 0.2.10 — 2026-10-10
+
+- The avatar budget panel also recounts after component and asset edits (e.g. My Avatar leaving its default menu out
+  of the upload), not only hierarchy edits.
+
 ## 0.2.9 — 2026-10-08
 
 - Avatar budget: the parameters bar shows the face tracking template's share in light purple, as My Avatar's face tracking settings do, apart from the avatar's own and its custom base's.
